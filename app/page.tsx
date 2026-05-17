@@ -266,13 +266,28 @@ export default function RedDotExperience() {
           </div>
 
           {/* Right: Message Form */}
-          <div className="bg-white/5 border border-red-900/30 rounded-3xl p-8 backdrop-blur-xl">
-            <p className="uppercase tracking-[0.4em] text-red-300 text-xs mb-4">
-              A MESSAGE FOR RED DOT
-            </p>
-            <h2 className="text-3xl md:text-4xl font-serif mb-6">
-              Leave a Memory
-            </h2>
+          <div data-section="leave-memory" className="bg-white/5 border border-red-900/30 rounded-3xl p-8 backdrop-blur-xl">
+            <div className="flex items-start justify-between mb-6">
+              <div>
+                <p className="uppercase tracking-[0.4em] text-red-300 text-xs mb-4">
+                  A MESSAGE FOR RED DOT
+                </p>
+                <h2 className="text-3xl md:text-4xl font-serif">
+                  Leave a Memory
+                </h2>
+              </div>
+              <a
+                href="#memory-wall"
+                onClick={(e) => {
+                  e.preventDefault();
+                  const el = document.getElementById("memory-wall");
+                  el?.scrollIntoView({ behavior: "smooth" });
+                }}
+                className="inline-flex items-center gap-2 bg-red-900/40 hover:bg-red-900/60 transition-all px-4 py-2 rounded-lg text-xs uppercase tracking-wider text-red-200 whitespace-nowrap ml-4"
+              >
+                Check Memories
+              </a>
+            </div>
 
             <div className="space-y-4">
               {error ? (
@@ -530,19 +545,32 @@ export default function RedDotExperience() {
       </section>
 
       {/* Memory Wall Display */}
-      <section className="py-32 px-6 bg-gradient-to-b from-[#120303] to-black">
+      <section id="memory-wall" className="py-32 px-6 bg-gradient-to-b from-[#120303] to-black">
         <div className="max-w-7xl mx-auto">
           {/* Memory Wall */}
           <div>
             <div className="flex items-center justify-between mb-8">
-              <div>
-                <p className="uppercase tracking-[0.3em] text-red-300 text-xs mb-3">
-                  LIVE MEMORY WALL
-                </p>
+              <div className="flex items-start gap-4">
+                <a
+                  href="#leave-memory"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    const el = document.querySelector('[data-section="leave-memory"]');
+                    el?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                  className="inline-flex items-center gap-2 bg-red-900/40 hover:bg-red-900/60 transition-all px-4 py-2 rounded-lg text-xs uppercase tracking-wider text-red-200 whitespace-nowrap mt-1"
+                >
+                  Share Your Wishes
+                </a>
+                <div>
+                  <p className="uppercase tracking-[0.3em] text-red-300 text-xs mb-3">
+                    LIVE MEMORY WALL
+                  </p>
 
-                <h3 className="text-4xl font-serif">
-                  Wishes for Red Dot
-                </h3>
+                  <h3 className="text-4xl font-serif">
+                    Wishes for Red Dot
+                  </h3>
+                </div>
               </div>
 
               <div className="text-red-300 text-sm uppercase tracking-[0.3em]">
