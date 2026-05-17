@@ -32,6 +32,7 @@ export default function RedDotExperience() {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const imageRef = useRef<HTMLInputElement | null>(null);
   const videoRef = useRef<HTMLInputElement | null>(null);
@@ -108,17 +109,22 @@ export default function RedDotExperience() {
 
   const fetchMemories = async () => {
     setLoading(true);
+    setError("");
 
-    const { data } = await supabase
-      .from("memories")
-      .select("*")
-      .order("created_at", { ascending: false });
+    try {
+      const response = await fetch("/api/memories");
+      const result = await response.json();
 
-    if (data) {
-      setMemoryWall(data as Memory[]);
+      if (!response.ok || result.error) {
+        throw new Error(result.error || "Could not load memories.");
+      }
+
+      setMemoryWall(result.data as Memory[]);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Could not load memories.");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -149,15 +155,36 @@ export default function RedDotExperience() {
     content: string,
     preview: string
   ) => {
-    const { error } = await supabase.from("memories").insert({
-      type,
-      name: guestName || "Anonymous",
-      content,
-      preview,
-    });
+    setError("");
+    setSuccess("");
 
-    if (error) {
-      setError("Could not save memory.");
+    try {
+      const response = await fetch("/api/memories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type,
+          name: guestName?.trim() || "Anonymous",
+          content,
+          preview,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok || data.error) {
+        throw new Error(data.error || "Could not save memory.");
+      }
+
+      if (data.data && Array.isArray(data.data) && data.data[0]) {
+        setMemoryWall((prev) => [data.data[0] as Memory, ...prev]);
+      }
+
+      setSuccess("Memory successfully added to the wall.");
+      return true;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Could not save memory.";
+      setError(message);
+      return false;
     }
   };
 
@@ -183,7 +210,11 @@ export default function RedDotExperience() {
         .from(bucket)
         .getPublicUrl(fileName);
 
-      await addMemory(type, data.publicUrl, file.name);
+      const saved = await addMemory(type, data.publicUrl, file.name);
+      if (saved) {
+        setGuestName("");
+        setGuestMessage("");
+      }
     } catch (err) {
       console.error(err);
       setError("Upload failed. Please try again.");
@@ -244,6 +275,18 @@ export default function RedDotExperience() {
             </h2>
 
             <div className="space-y-4">
+              {error ? (
+                <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-red-100 text-sm">
+                  {error}
+                </div>
+              ) : null}
+
+              {success ? (
+                <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-emerald-100 text-sm">
+                  {success}
+                </div>
+              ) : null}
+
               <input
                 type="text"
                 value={guestName}
@@ -264,7 +307,8 @@ export default function RedDotExperience() {
                 <button
                   type="button"
                   onClick={() => imageRef.current?.click()}
-                  className="bg-black/40 border border-red-900/40 rounded-xl py-3 hover:border-red-500 transition text-xs"
+                  disabled={uploading}
+                  className="bg-black/40 border border-red-900/40 rounded-xl py-3 hover:border-red-500 transition text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   📷 Image
                 </button>
@@ -272,7 +316,8 @@ export default function RedDotExperience() {
                 <button
                   type="button"
                   onClick={() => videoRef.current?.click()}
-                  className="bg-black/40 border border-red-900/40 rounded-xl py-3 hover:border-red-500 transition text-xs"
+                  disabled={uploading}
+                  className="bg-black/40 border border-red-900/40 rounded-xl py-3 hover:border-red-500 transition text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   🎥 Video
                 </button>
@@ -280,7 +325,8 @@ export default function RedDotExperience() {
                 <button
                   type="button"
                   onClick={() => voiceRef.current?.click()}
-                  className="bg-black/40 border border-red-900/40 rounded-xl py-3 hover:border-red-500 transition text-xs"
+                  disabled={uploading}
+                  className="bg-black/40 border border-red-900/40 rounded-xl py-3 hover:border-red-500 transition text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   🎤 Voice
                 </button>
@@ -329,10 +375,16 @@ export default function RedDotExperience() {
                 type="button"
                 onClick={async () => {
                   if (!guestMessage.trim()) return;
-                  await addMemory("text", guestMessage, guestMessage.slice(0, 80));
-                  setGuestMessage("");
+                  setUploading(true);
+                  const saved = await addMemory("text", guestMessage, guestMessage.slice(0, 80));
+                  if (saved) {
+                    setGuestName("");
+                    setGuestMessage("");
+                  }
+                  setUploading(false);
                 }}
-                className="w-full bg-red-700 hover:bg-red-600 transition py-3 rounded-xl text-base font-medium"
+                disabled={uploading}
+                className="w-full bg-red-700 hover:bg-red-600 transition py-3 rounded-xl text-base font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {uploading ? "Uploading..." : "Send to Red Dot"}
               </button>
