@@ -1,5 +1,5 @@
 "use client";
-
+import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 
@@ -37,48 +37,74 @@ export default function RedDotExperience() {
   const videoRef = useRef<HTMLInputElement | null>(null);
   const voiceRef = useRef<HTMLInputElement | null>(null);
 
+  const journeyRef = useRef<HTMLElement | null>(null);
+  const [playingJourney, setPlayingJourney] = useState(false);
+  const [currentSlide, setCurrentSlide] = useState(0);
+
   const milestones = [
     {
       title: "The Red Dot Appears",
-      subtitle: "The first time we saw you.",
+      subtitle: "The first time shilpi saw the red dot.",
       description:
         "A doctor pointed at a tiny red dot on a screen and suddenly, the future became real.",
       image:
-        "https://images.unsplash.com/photo-1516574187841-cb9cc2ca948b?q=80&w=1200&auto=format&fit=crop",
+        "/scans/tiny-red-dot.png",
     },
     {
-      title: "The First Heartbeat",
-      subtitle: "153 beats per minute.",
+      title: "Heartbeat that Shifted Something in me",
+      subtitle: "151 beats per minute.",
       description:
-        "We didn’t understand the sound. But somehow, we understood everything.",
+        "We didn’t understand the sound. But somehow, It mattered.",
       image:
-        "https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=1200&auto=format&fit=crop",
+        "/scans/heartbeat-shifted-something.png",
     },
     {
-      title: "The Level 1 Scan",
+      title: "The Level 2 Scan",
       subtitle: "The first meeting.",
       description:
         "This was the day Red Dot stopped feeling abstract and became someone we were waiting to meet.",
       image:
-        "https://images.unsplash.com/photo-1511044568932-338cba0ad803?q=80&w=1200&auto=format&fit=crop",
+        "/scans/level-2-scan.jpeg",
     },
     {
       title: "The Worry",
       subtitle: "The Doppler days.",
       description:
-        "For a brief moment, every waveform mattered. But the heartbeat stayed strong and growth remained healthy.",
+        "For a brief moment, we were concerned. We were stupid. The heartbeat stayed strong and growth remained healthy.",
       image:
-        "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?q=80&w=1200&auto=format&fit=crop",
+        "/scans/doppler-days.png",
     },
     {
-      title: "The Reassurance",
-      subtitle: "When fear became planning.",
+      title: "Mom wrote a letter to Red Dot",
+      subtitle: "When the baby became her strength.",
       description:
-        "The doctors smiled. Growth looked beautiful. That’s when we finally started planning the baby shower.",
+        "I read the letter and it inspired me to create this experience and share with you all. Hope the love that surrounded the baby even before birth continues to grow.",
       image:
-        "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?q=80&w=1200&auto=format&fit=crop",
+        "/scans/letters.png",
     },
   ];
+
+  useEffect(() => {
+    if (!playingJourney) return;
+    const t = setInterval(() => {
+      setCurrentSlide((s) => (s + 1) % milestones.length);
+    }, 3500);
+    return () => clearInterval(t);
+  }, [playingJourney]);
+
+  const nextSlide = () => setCurrentSlide((s) => (s + 1) % milestones.length);
+  const prevSlide = () => setCurrentSlide((s) => (s - 1 + milestones.length) % milestones.length);
+
+  useEffect(() => {
+    if (!playingJourney) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "ArrowRight") nextSlide();
+      if (e.key === "ArrowLeft") prevSlide();
+      if (e.key === "Escape") setPlayingJourney(false);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [playingJourney]);
 
   const fetchMemories = async () => {
     setLoading(true);
@@ -193,6 +219,13 @@ export default function RedDotExperience() {
 
           <a
             href="#journey"
+            onClick={(e) => {
+              e.preventDefault();
+              const el = document.getElementById("journey");
+              el?.scrollIntoView({ behavior: "smooth" });
+              setCurrentSlide(0);
+              setPlayingJourney(true);
+            }}
             className="inline-flex items-center gap-3 bg-red-700 hover:bg-red-600 transition-all duration-300 px-8 py-4 rounded-full text-lg shadow-2xl"
           >
             Begin Journey
@@ -224,8 +257,12 @@ export default function RedDotExperience() {
 
           <div className="space-y-32">
             {milestones.map((item, index) => (
-              <div
+              <motion.div
                 key={index}
+                initial={{ opacity: 0, y: 80 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 7, delay: index * 0.3 }}
+                viewport={{ once: true }}
                 className={`grid md:grid-cols-2 gap-12 items-center ${
                   index % 2 === 1 ? "md:[&>*:first-child]:order-2" : ""
                 }`}
@@ -236,7 +273,8 @@ export default function RedDotExperience() {
                   <img
                     src={item.image}
                     alt={item.title}
-                    className="relative rounded-3xl border border-red-900/40 shadow-2xl object-cover h-[500px] w-full"
+                    className="relative rounded-3xl border border-red-900/40 shadow-2xl object-contain max-h-[650px] w-full"
+                    style={{ backgroundColor: '#040404' }}
                   />
                 </div>
 
@@ -257,9 +295,77 @@ export default function RedDotExperience() {
                     {item.description}
                   </p>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
+
+          {/* Player overlay (auto-plays like frames) */}
+          {playingJourney && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90">
+              <div className="relative max-w-4xl w-full mx-6">
+                <motion.div
+                  key={currentSlide}
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.9 }}
+                  className="rounded-3xl overflow-hidden bg-black/80 border border-red-900/30 shadow-2xl"
+                >
+                  <div className="md:flex md:items-center">
+                    <div className="md:w-1/2 w-full bg-black flex items-center justify-center p-6">
+                      <img
+                        src={milestones[currentSlide].image}
+                        alt={milestones[currentSlide].title}
+                        className="w-full object-contain max-h-[70vh]"
+                        style={{ backgroundColor: '#040404' }}
+                      />
+                    </div>
+
+                    <div className="md:w-1/2 w-full p-8">
+                      <p className="uppercase tracking-[0.4em] text-red-300 text-xs mb-4">
+                        CHAPTER {currentSlide + 1}
+                      </p>
+
+                      <h3 className="text-3xl md:text-4xl font-serif mb-4">
+                        {milestones[currentSlide].title}
+                      </h3>
+
+                      <p className="text-red-200 italic mb-4">
+                        {milestones[currentSlide].subtitle}
+                      </p>
+
+                      <p className="text-zinc-300 leading-relaxed">
+                        {milestones[currentSlide].description}
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+
+                <div className="absolute bottom-6 right-6 flex items-center justify-end gap-4">
+                  <button
+                    onClick={() => prevSlide()}
+                    className="px-4 py-2 bg-white/6 hover:bg-white/10 rounded-md text-white"
+                  >
+                    Back
+                  </button>
+
+                  <button
+                    onClick={() => setPlayingJourney(false)}
+                    className="px-4 py-2 bg-red-700 hover:bg-red-600 rounded-md text-white"
+                  >
+                    Close
+                  </button>
+
+                  <button
+                    onClick={() => nextSlide()}
+                    className="px-4 py-2 bg-white/6 hover:bg-white/10 rounded-md text-white"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
@@ -457,7 +563,8 @@ export default function RedDotExperience() {
                       <img
                         src={memory.content}
                         alt="Memory"
-                        className="rounded-2xl w-full object-cover max-h-[400px]"
+                        className="rounded-2xl w-full object-contain max-h-[400px]"
+                        style={{ backgroundColor: '#040404' }}
                       />
                     )}
 
@@ -500,7 +607,7 @@ export default function RedDotExperience() {
         </p>
 
         <div className="text-zinc-600 uppercase tracking-[0.4em] text-xs">
-          Shilpi & Keshav • June 2026
+          Shilpi & Keshav • EDD : 22nd June 2026
         </div>
       </footer>
     </div>
