@@ -194,42 +194,150 @@ export default function RedDotExperience() {
 
   return (
     <div className="min-h-screen bg-black text-white overflow-x-hidden">
-      {/* Hero */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center text-center px-6 py-10">
+      {/* Hero + Form */}
+      <section className="relative min-h-screen flex flex-col items-center justify-center px-6 py-10">
         <div className="absolute inset-0 bg-gradient-to-b from-black via-[#140000] to-black" />
 
-        <div className="relative z-10 max-w-4xl mx-auto pb-10">
-          <div className="w-8 h-8 rounded-full bg-red-600 mx-auto animate-pulse shadow-[0_0_60px_rgba(220,38,38,0.8)] mb-10" />
+        <div className="relative z-10 max-w-7xl mx-auto w-full grid md:grid-cols-2 gap-12 items-center">
+          {/* Left: Hero Content */}
+          <div className="text-center md:text-left">
+            <div className="w-8 h-8 rounded-full bg-red-600 mx-auto md:mx-0 animate-pulse shadow-[0_0_60px_rgba(220,38,38,0.8)] mb-10" />
 
-          <p className="uppercase tracking-[0.5em] text-red-200 text-xs mb-6">
-            RED DOT
-          </p>
+            <p className="uppercase tracking-[0.5em] text-red-200 text-xs mb-6">
+              RED DOT
+            </p>
 
-          <h1 className="text-5xl md:text-8xl font-serif leading-tight mb-8">
-            Before you meet our child,
-            <br />
-            enter the journey.
-          </h1>
+            <h1 className="text-5xl md:text-7xl font-serif leading-tight mb-8">
+              Before you meet our child,
+              <br />
+              enter the journey.
+            </h1>
 
-          <p className="text-lg md:text-2xl text-zinc-300 leading-relaxed max-w-3xl mx-auto mb-12">
-            A cinematic memory experience by Shilpi & Keshav.
-            <br />
-            The story of a life that began as a tiny red dot.
-          </p>
+            <p className="text-lg md:text-xl text-zinc-300 leading-relaxed mb-12">
+              A cinematic memory experience by Shilpi & Keshav.
+              <br />
+              The story of a life that began as a tiny red dot.
+            </p>
 
-          <a
-            href="#journey"
-            onClick={(e) => {
-              e.preventDefault();
-              const el = document.getElementById("journey");
-              el?.scrollIntoView({ behavior: "smooth" });
-              setCurrentSlide(0);
-              setPlayingJourney(true);
-            }}
-            className="inline-flex items-center gap-3 bg-red-700 hover:bg-red-600 transition-all duration-300 px-8 py-4 rounded-full text-lg shadow-2xl"
-          >
-            Begin Journey
-          </a>
+            <a
+              href="#journey"
+              onClick={(e) => {
+                e.preventDefault();
+                const el = document.getElementById("journey");
+                el?.scrollIntoView({ behavior: "smooth" });
+                setCurrentSlide(0);
+                setPlayingJourney(true);
+              }}
+              className="inline-flex items-center gap-3 bg-red-700 hover:bg-red-600 transition-all duration-300 px-8 py-4 rounded-full text-lg shadow-2xl"
+            >
+              Begin Journey
+            </a>
+          </div>
+
+          {/* Right: Message Form */}
+          <div className="bg-white/5 border border-red-900/30 rounded-3xl p-8 backdrop-blur-xl">
+            <p className="uppercase tracking-[0.4em] text-red-300 text-xs mb-4">
+              A MESSAGE FOR RED DOT
+            </p>
+            <h2 className="text-3xl md:text-4xl font-serif mb-6">
+              Leave a Memory
+            </h2>
+
+            <div className="space-y-4">
+              <input
+                type="text"
+                value={guestName}
+                onChange={(e) => setGuestName(e.target.value)}
+                placeholder="Your name"
+                className="w-full bg-black/40 border border-red-900/40 rounded-2xl px-5 py-3 outline-none focus:border-red-500 text-sm"
+              />
+
+              <textarea
+                rows={4}
+                value={guestMessage}
+                onChange={(e) => setGuestMessage(e.target.value)}
+                placeholder="Write something for Red Dot..."
+                className="w-full bg-black/40 border border-red-900/40 rounded-2xl px-5 py-3 outline-none focus:border-red-500 text-sm"
+              />
+
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => imageRef.current?.click()}
+                  className="bg-black/40 border border-red-900/40 rounded-xl py-3 hover:border-red-500 transition text-xs"
+                >
+                  📷 Image
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => videoRef.current?.click()}
+                  className="bg-black/40 border border-red-900/40 rounded-xl py-3 hover:border-red-500 transition text-xs"
+                >
+                  🎥 Video
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => voiceRef.current?.click()}
+                  className="bg-black/40 border border-red-900/40 rounded-xl py-3 hover:border-red-500 transition text-xs"
+                >
+                  🎤 Voice
+                </button>
+              </div>
+
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                ref={imageRef}
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  await uploadMedia(file, "image");
+                }}
+              />
+
+              <input
+                type="file"
+                accept="video/*"
+                capture="environment"
+                ref={videoRef}
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  await uploadMedia(file, "video");
+                }}
+              />
+
+              <input
+                type="file"
+                accept="audio/*"
+                capture
+                ref={voiceRef}
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  await uploadMedia(file, "voice");
+                }}
+              />
+
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!guestMessage.trim()) return;
+                  await addMemory("text", guestMessage, guestMessage.slice(0, 80));
+                  setGuestMessage("");
+                }}
+                className="w-full bg-red-700 hover:bg-red-600 transition py-3 rounded-xl text-base font-medium"
+              >
+                {uploading ? "Uploading..." : "Send to Red Dot"}
+              </button>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -369,135 +477,9 @@ export default function RedDotExperience() {
         </div>
       </section>
 
-      {/* Guest Wishes */}
+      {/* Memory Wall Display */}
       <section className="py-32 px-6 bg-gradient-to-b from-[#120303] to-black">
-        <div className="max-w-3xl mx-auto text-center mb-20">
-          <p className="uppercase tracking-[0.4em] text-red-300 text-xs mb-6">
-            A MESSAGE FOR RED DOT
-          </p>
-
-          <h2 className="text-5xl md:text-6xl font-serif mb-8">
-            Leave a Memory
-          </h2>
-
-          <p className="text-zinc-300 text-lg leading-relaxed">
-            Every blessing instantly becomes part of Red Dot’s living memory wall.
-          </p>
-        </div>
-
-        <div className="grid lg:grid-cols-2 gap-12 max-w-7xl mx-auto items-start">
-          {/* Submission Form */}
-          <div className="bg-white/5 border border-red-900/30 rounded-3xl p-8 backdrop-blur-xl sticky top-10">
-            <div className="space-y-6">
-              <input
-                type="text"
-                value={guestName}
-                onChange={(e) => setGuestName(e.target.value)}
-                placeholder="Your name"
-                className="w-full bg-black/40 border border-red-900/40 rounded-2xl px-5 py-4 outline-none focus:border-red-500"
-              />
-
-              <textarea
-                rows={6}
-                value={guestMessage}
-                onChange={(e) => setGuestMessage(e.target.value)}
-                placeholder="Write something for Red Dot..."
-                className="w-full bg-black/40 border border-red-900/40 rounded-2xl px-5 py-4 outline-none focus:border-red-500"
-              />
-
-              <div className="grid grid-cols-3 gap-4">
-                <button
-                  type="button"
-                  onClick={() => imageRef.current?.click()}
-                  className="bg-black/40 border border-red-900/40 rounded-2xl py-4 hover:border-red-500 transition"
-                >
-                  📷 Image
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => videoRef.current?.click()}
-                  className="bg-black/40 border border-red-900/40 rounded-2xl py-4 hover:border-red-500 transition"
-                >
-                  🎥 Video
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!navigator.mediaDevices) {
-                      voiceRef.current?.click();
-                      return;
-                    }
-
-                    voiceRef.current?.click();
-                  }}
-                  className="bg-black/40 border border-red-900/40 rounded-2xl py-4 hover:border-red-500 transition"
-                >
-                  🎤 Voice
-                </button>
-              </div>
-
-              <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                ref={imageRef}
-                className="hidden"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-
-                  await uploadMedia(file, "image");
-                }}
-              />
-
-              <input
-                type="file"
-                accept="video/*"
-                capture="environment"
-                ref={videoRef}
-                className="hidden"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-
-                  await uploadMedia(file, "video");
-                }}
-              />
-
-              <input
-                type="file"
-                accept="audio/*"
-                capture
-                ref={voiceRef}
-                className="hidden"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-
-                  await uploadMedia(file, "voice");
-                }}
-              />
-
-              <button
-                type="button"
-                onClick={async () => {
-                  if (!guestMessage.trim()) return;
-
-                  await addMemory(
-                    "text",
-                    guestMessage,
-                    guestMessage.slice(0, 80)
-                  );
-
-                  setGuestMessage("");
-                }}
-                className="w-full bg-red-700 hover:bg-red-600 transition py-4 rounded-2xl text-lg font-medium"
-              >{uploading ? "Uploading..." : "Send to Red Dot"}</button>
-            </div>
-          </div>
-
+        <div className="max-w-7xl mx-auto">
           {/* Memory Wall */}
           <div>
             <div className="flex items-center justify-between mb-8">
