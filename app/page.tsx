@@ -301,8 +301,8 @@ export default function RedDotExperience() {
 
           {/* Player overlay (auto-plays like frames) */}
           {playingJourney && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90">
-              <div className="relative max-w-4xl w-full mx-6">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 px-4">
+              <div className="relative max-w-4xl w-full mx-0 md:mx-6 max-h-[calc(100vh-4rem)] overflow-hidden">
                 <motion.div
                   key={currentSlide}
                   initial={{ opacity: 0, scale: 0.98 }}
@@ -312,16 +312,16 @@ export default function RedDotExperience() {
                   className="rounded-3xl overflow-hidden bg-black/80 border border-red-900/30 shadow-2xl"
                 >
                   <div className="md:flex md:items-center">
-                    <div className="md:w-1/2 w-full bg-black flex items-center justify-center p-6">
+                    <div className="md:w-1/2 w-full bg-black flex items-center justify-center p-4 md:p-6">
                       <img
                         src={milestones[currentSlide].image}
                         alt={milestones[currentSlide].title}
-                        className="w-full object-contain max-h-[70vh]"
+                        className="w-full object-contain max-h-[55vh] md:max-h-[70vh]"
                         style={{ backgroundColor: '#040404' }}
                       />
                     </div>
 
-                    <div className="md:w-1/2 w-full p-8">
+                    <div className="md:w-1/2 w-full p-6 md:p-8">
                       <p className="uppercase tracking-[0.4em] text-red-300 text-xs mb-4">
                         CHAPTER {currentSlide + 1}
                       </p>
@@ -341,24 +341,24 @@ export default function RedDotExperience() {
                   </div>
                 </motion.div>
 
-                <div className="absolute bottom-6 right-6 flex items-center justify-end gap-4">
+                <div className="mt-4 flex flex-wrap justify-end gap-3 px-4 md:px-0">
                   <button
                     onClick={() => prevSlide()}
-                    className="px-4 py-2 bg-white/6 hover:bg-white/10 rounded-md text-white"
+                    className="min-w-[84px] px-4 py-2 bg-white/6 hover:bg-white/10 rounded-md text-white text-sm"
                   >
                     Back
                   </button>
 
                   <button
                     onClick={() => setPlayingJourney(false)}
-                    className="px-4 py-2 bg-red-700 hover:bg-red-600 rounded-md text-white"
+                    className="min-w-[84px] px-4 py-2 bg-red-700 hover:bg-red-600 rounded-md text-white text-sm"
                   >
                     Close
                   </button>
 
                   <button
                     onClick={() => nextSlide()}
-                    className="px-4 py-2 bg-white/6 hover:bg-white/10 rounded-md text-white"
+                    className="min-w-[84px] px-4 py-2 bg-white/6 hover:bg-white/10 rounded-md text-white text-sm"
                   >
                     Next
                   </button>
