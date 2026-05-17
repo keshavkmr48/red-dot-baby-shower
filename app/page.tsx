@@ -195,10 +195,10 @@ export default function RedDotExperience() {
   return (
     <div className="min-h-screen bg-black text-white overflow-x-hidden">
       {/* Hero */}
-      <section className="relative h-screen flex flex-col items-center justify-center text-center px-6">
+      <section className="relative min-h-screen flex flex-col items-center justify-center text-center px-6 py-10">
         <div className="absolute inset-0 bg-gradient-to-b from-black via-[#140000] to-black" />
 
-        <div className="relative z-10 max-w-4xl mx-auto">
+        <div className="relative z-10 max-w-4xl mx-auto pb-10">
           <div className="w-8 h-8 rounded-full bg-red-600 mx-auto animate-pulse shadow-[0_0_60px_rgba(220,38,38,0.8)] mb-10" />
 
           <p className="uppercase tracking-[0.5em] text-red-200 text-xs mb-6">
