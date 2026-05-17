@@ -301,40 +301,40 @@ export default function RedDotExperience() {
 
           {/* Player overlay (auto-plays like frames) */}
           {playingJourney && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 px-4">
-              <div className="relative max-w-4xl w-full mx-0 md:mx-6 max-h-[calc(100vh-4rem)] overflow-hidden">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 px-4 py-4">
+              <div className="relative max-w-4xl w-full mx-0 md:mx-6 max-h-[calc(100vh-6rem)] overflow-auto">
                 <motion.div
                   key={currentSlide}
                   initial={{ opacity: 0, scale: 0.98 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.9 }}
-                  className="rounded-3xl overflow-hidden bg-black/80 border border-red-900/30 shadow-2xl"
+                  className="rounded-3xl overflow-hidden bg-black/80 border border-red-900/30 shadow-2xl max-h-[calc(100vh-7rem)] md:max-h-none"
                 >
                   <div className="md:flex md:items-center">
                     <div className="md:w-1/2 w-full bg-black flex items-center justify-center p-4 md:p-6">
                       <img
                         src={milestones[currentSlide].image}
                         alt={milestones[currentSlide].title}
-                        className="w-full object-contain max-h-[55vh] md:max-h-[70vh]"
+                        className="w-full object-contain max-h-[40vh] md:max-h-[60vh]"
                         style={{ backgroundColor: '#040404' }}
                       />
                     </div>
 
-                    <div className="md:w-1/2 w-full p-6 md:p-8">
-                      <p className="uppercase tracking-[0.4em] text-red-300 text-xs mb-4">
+                    <div className="md:w-1/2 w-full p-4 md:p-6">
+                      <p className="uppercase tracking-[0.4em] text-red-300 text-[10px] md:text-xs mb-3">
                         CHAPTER {currentSlide + 1}
                       </p>
 
-                      <h3 className="text-3xl md:text-4xl font-serif mb-4">
+                      <h3 className="text-2xl md:text-4xl font-serif mb-3">
                         {milestones[currentSlide].title}
                       </h3>
 
-                      <p className="text-red-200 italic mb-4">
+                      <p className="text-red-200 italic mb-3 text-sm md:text-base">
                         {milestones[currentSlide].subtitle}
                       </p>
 
-                      <p className="text-zinc-300 leading-relaxed">
+                      <p className="text-zinc-300 leading-relaxed text-sm md:text-base">
                         {milestones[currentSlide].description}
                       </p>
                     </div>
