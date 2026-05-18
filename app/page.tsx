@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -9,7 +9,7 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-type MemoryType = "text" | "image" | "video" | "voice";
+type MemoryType = "text" | "image" | "video" | "voice" | "pdf";
 
 interface Memory {
   id: number;
@@ -24,7 +24,18 @@ const BUCKETS: Record<Exclude<MemoryType, "text">, string> = {
   image: "images",
   video: "videos",
   voice: "voices",
+  pdf: "pdfs",
 };
+
+const MEMORY_TYPE_LABELS: Record<MemoryType, string> = {
+  text: "Read Full Wish",
+  image: "Image Wish",
+  video: "Video Wish",
+  voice: "Voice Wish",
+  pdf: "PDF Wish",
+};
+
+const looksLikeFileName = (value: string) => /\.[a-z0-9]{2,5}$/i.test(value.trim());
 
 const MILESTONES = [
   {
@@ -71,13 +82,35 @@ export default function RedDotExperience() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [featuredWishIndex, setFeaturedWishIndex] = useState(0);
 
   const imageRef = useRef<HTMLInputElement | null>(null);
   const videoRef = useRef<HTMLInputElement | null>(null);
   const voiceRef = useRef<HTMLInputElement | null>(null);
+  const pdfRef = useRef<HTMLInputElement | null>(null);
 
   const [playingJourney, setPlayingJourney] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const blessingBoardMemories = useMemo(
+    () =>
+      memoryWall.filter(
+        (memory) =>
+          (memory.type === "text" && memory.content.trim().length > 0) ||
+          (memory.type !== "text" &&
+            memory.preview.trim().length > 200 &&
+            !looksLikeFileName(memory.preview))
+      ),
+    [memoryWall]
+  );
+  const featuredWish =
+    blessingBoardMemories.length > 0
+      ? blessingBoardMemories[featuredWishIndex % blessingBoardMemories.length]
+      : null;
+  const featuredWishText = featuredWish
+    ? featuredWish.type === "text"
+      ? featuredWish.content
+      : featuredWish.preview
+    : "";
 
   useEffect(() => {
     if (!playingJourney) return;
@@ -86,6 +119,14 @@ export default function RedDotExperience() {
     }, 3500);
     return () => clearInterval(t);
   }, [playingJourney]);
+
+  useEffect(() => {
+    if (blessingBoardMemories.length < 2) return;
+    const t = window.setInterval(() => {
+      setFeaturedWishIndex((index) => (index + 1) % blessingBoardMemories.length);
+    }, 6500);
+    return () => window.clearInterval(t);
+  }, [blessingBoardMemories.length]);
 
   const nextSlide = useCallback(
     () => setCurrentSlide((s) => (s + 1) % MILESTONES.length),
@@ -139,7 +180,7 @@ export default function RedDotExperience() {
           table: "memories",
         },
         (payload) => {
-          setMemoryWall((prev) => [payload.new as Memory, ...prev]);
+          setMemoryWall((prev) => [...prev, payload.new as Memory]);
         }
       )
       .subscribe();
@@ -176,7 +217,7 @@ export default function RedDotExperience() {
       }
 
       if (data.data && Array.isArray(data.data) && data.data[0]) {
-        setMemoryWall((prev) => [data.data[0] as Memory, ...prev]);
+        setMemoryWall((prev) => [...prev, data.data[0] as Memory]);
       }
 
       setSuccess("Memory successfully added to the wall.");
@@ -200,11 +241,14 @@ export default function RedDotExperience() {
       const fileName = `${Date.now()}-${Math.random()}.${extension}`;
       const bucket = BUCKETS[type];
 
-      const { error } = await supabase.storage.from(bucket).upload(fileName, file);
+      const { error } = await supabase.storage
+        .from(bucket)
+        .upload(fileName, file, { contentType: file.type });
       if (error) throw error;
 
       const { data } = supabase.storage.from(bucket).getPublicUrl(fileName);
-      const saved = await addMemory(type, data.publicUrl, file.name);
+      const caption = guestMessage.trim();
+      const saved = await addMemory(type, data.publicUrl, caption);
 
       if (saved) {
         setGuestName("");
@@ -269,7 +313,7 @@ export default function RedDotExperience() {
                   A MESSAGE FOR RED DOT
                 </p>
                 <h2 className="text-3xl font-serif leading-tight md:text-4xl">
-                  Leave a Memory
+                  Leave a Wish
                 </h2>
               </div>
               <a
@@ -281,7 +325,7 @@ export default function RedDotExperience() {
                 }}
                 className="inline-flex items-center justify-center rounded-full bg-red-900/45 px-4 py-2 text-[11px] uppercase tracking-wider text-red-200 transition-all hover:bg-red-900/60 sm:ml-4 sm:whitespace-nowrap"
               >
-                Check Memories
+                See Wishes from Others
               </a>
             </div>
 
@@ -310,36 +354,65 @@ export default function RedDotExperience() {
                 rows={4}
                 value={guestMessage}
                 onChange={(e) => setGuestMessage(e.target.value)}
-                placeholder="Write something for Red Dot..."
+                placeholder="Write a wish, or add a caption before uploading..."
                 className="w-full resize-none rounded-xl border border-red-900/40 bg-black/45 px-4 py-3 text-base outline-none transition focus:border-red-500 sm:rounded-2xl sm:px-5 sm:text-sm"
               />
 
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 <button
                   type="button"
                   onClick={() => imageRef.current?.click()}
                   disabled={uploading}
-                  className="rounded-xl border border-red-900/40 bg-black/45 px-2 py-3 text-[11px] transition hover:border-red-500 disabled:cursor-not-allowed disabled:opacity-50 sm:text-xs"
+                  className="min-h-20 rounded-xl border border-red-900/40 bg-black/45 px-3 py-3 text-left transition hover:border-red-500 hover:bg-red-950/20 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Image
+                  <span className="block text-sm font-medium text-zinc-100">
+                    Image
+                  </span>
+                  <span className="mt-1 block text-[11px] leading-snug text-zinc-400">
+                    You can share a selfie, a drawing, or a Image note.
+                  </span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => videoRef.current?.click()}
                   disabled={uploading}
-                  className="rounded-xl border border-red-900/40 bg-black/45 px-2 py-3 text-[11px] transition hover:border-red-500 disabled:cursor-not-allowed disabled:opacity-50 sm:text-xs"
+                  className="min-h-20 rounded-xl border border-red-900/40 bg-black/45 px-3 py-3 text-left transition hover:border-red-500 hover:bg-red-950/20 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Video
+                  <span className="block text-sm font-medium text-zinc-100">
+                    Video
+                  </span>
+                  <span className="mt-1 block text-[11px] leading-snug text-zinc-400">
+                    You can share a video message or a recorded film.
+                  </span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => voiceRef.current?.click()}
                   disabled={uploading}
-                  className="rounded-xl border border-red-900/40 bg-black/45 px-2 py-3 text-[11px] transition hover:border-red-500 disabled:cursor-not-allowed disabled:opacity-50 sm:text-xs"
+                  className="min-h-20 rounded-xl border border-red-900/40 bg-black/45 px-3 py-3 text-left transition hover:border-red-500 hover:bg-red-950/20 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Voice
+                  <span className="block text-sm font-medium text-zinc-100">
+                    Voice
+                  </span>
+                  <span className="mt-1 block text-[11px] leading-snug text-zinc-400">
+                    You can share an audio message or a recorded conversation.
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => pdfRef.current?.click()}
+                  disabled={uploading}
+                  className="min-h-20 rounded-xl border border-red-900/40 bg-black/45 px-3 py-3 text-left transition hover:border-red-500 hover:bg-red-950/20 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <span className="block text-sm font-medium text-zinc-100">
+                    PDF
+                  </span>
+                  <span className="mt-1 block text-[11px] leading-snug text-zinc-400">
+                    You can share a scanned handwritten note.
+                  </span>
                 </button>
               </div>
 
@@ -382,6 +455,18 @@ export default function RedDotExperience() {
                 }}
               />
 
+              <input
+                type="file"
+                accept="application/pdf,.pdf"
+                ref={pdfRef}
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  await uploadMedia(file, "pdf");
+                }}
+              />
+
               <button
                 type="button"
                 onClick={async () => {
@@ -401,7 +486,7 @@ export default function RedDotExperience() {
                 disabled={uploading}
                 className="w-full rounded-xl bg-red-700 py-3.5 text-base font-medium transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {uploading ? "Uploading..." : "Send to Red Dot"}
+                {uploading ? "Uploading..." : "Send Your Wish"}
               </button>
             </div>
           </div>
@@ -547,8 +632,14 @@ export default function RedDotExperience() {
         className="bg-gradient-to-b from-[#120303] to-black px-4 py-20 sm:px-6 md:py-32"
       >
         <div className="mx-auto max-w-7xl">
-          <div className="mb-8 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+          <div className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center">
+              <h3 className="text-4xl font-serif leading-tight">
+                Wishes for Red Dot
+              </h3>
+            </div>
+
+            <div className="flex flex-col items-start gap-3 lg:items-end">
               <a
                 href="#leave-memory"
                 onClick={(e) => {
@@ -556,23 +647,14 @@ export default function RedDotExperience() {
                   const el = document.getElementById("leave-memory");
                   el?.scrollIntoView({ behavior: "smooth" });
                 }}
-                className="inline-flex items-center justify-center rounded-full bg-red-900/45 px-4 py-2 text-[11px] uppercase tracking-wider text-red-200 transition-all hover:bg-red-900/60 sm:mt-1 sm:whitespace-nowrap"
+                className="inline-flex items-center justify-center rounded-full bg-red-900/45 px-4 py-2 text-[11px] uppercase tracking-wider text-red-200 transition-all hover:bg-red-900/60 sm:whitespace-nowrap"
               >
                 Share Your Wishes
               </a>
-              <div>
-                <p className="mb-3 text-[10px] uppercase tracking-[0.28em] text-red-300 sm:text-xs sm:tracking-[0.3em]">
-                  LIVE MEMORY WALL
-                </p>
 
-                <h3 className="text-4xl font-serif leading-tight">
-                  Wishes for Red Dot
-                </h3>
+              <div className="text-xs uppercase tracking-[0.26em] text-red-300 sm:text-sm sm:tracking-[0.3em]">
+                {memoryWall.length} Wishes
               </div>
-            </div>
-
-            <div className="text-xs uppercase tracking-[0.26em] text-red-300 sm:text-sm sm:tracking-[0.3em]">
-              {memoryWall.length} Memories
             </div>
           </div>
 
@@ -585,11 +667,67 @@ export default function RedDotExperience() {
           {loading ? (
             <div className="text-lg text-zinc-400">Loading memories...</div>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 md:gap-6">
-              {memoryWall.map((memory) => (
+            <>
+              {featuredWish && (
+                <div className="mb-8 overflow-hidden rounded-3xl border border-red-900/35 bg-[radial-gradient(circle_at_20%_0%,rgba(220,38,38,0.18),transparent_34%),rgba(255,255,255,0.055)] shadow-2xl shadow-black/25 backdrop-blur-xl">
+                  <motion.div
+                    key={featuredWish.id}
+                    initial={{ opacity: 0, y: 14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.75, ease: "easeOut" }}
+                    className="grid gap-5 p-5 sm:p-7 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end"
+                  >
+                    <div>
+                      <div className="mb-4 flex flex-wrap items-center gap-3">
+                        <p className="text-[10px] uppercase tracking-[0.32em] text-red-300 sm:text-xs">
+                          Blessing Board
+                        </p>
+                        <span className="h-px w-10 bg-red-400/40" />
+                        <p className="text-[10px] uppercase tracking-[0.24em] text-red-100/70 sm:text-xs">
+                          {featuredWishIndex % blessingBoardMemories.length + 1} of{" "}
+                          {blessingBoardMemories.length}
+                        </p>
+                      </div>
+
+                      <p className="mb-4 break-words text-sm uppercase tracking-[0.28em] text-red-100 sm:text-base">
+                        {featuredWish.name}
+                      </p>
+
+                      <p className="max-h-[42vh] overflow-auto whitespace-pre-wrap break-words pr-1 text-xl leading-relaxed text-zinc-100 sm:text-2xl sm:leading-relaxed lg:max-h-72">
+                        {featuredWishText}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 lg:justify-end">
+                      {blessingBoardMemories.slice(0, 15).map((memory, index) => (
+                        <button
+                          key={memory.id}
+                          type="button"
+                          onClick={() => setFeaturedWishIndex(index)}
+                          className={`h-2.5 rounded-full transition-all ${
+                            index === featuredWishIndex % blessingBoardMemories.length
+                              ? "w-8 bg-red-400"
+                              : "w-2.5 bg-red-900/70 hover:bg-red-700"
+                          }`}
+                          aria-label={`Show wish ${index + 1}`}
+                        />
+                      ))}
+                    </div>
+                  </motion.div>
+                </div>
+              )}
+
+              <div className="grid items-start gap-4 md:grid-cols-2 md:gap-6">
+              {memoryWall.map((memory) => {
+                const hasWrittenMessage =
+                  memory.type !== "text" &&
+                  memory.preview.trim().length > 0 &&
+                  !looksLikeFileName(memory.preview);
+
+                return (
                 <details
                   key={memory.id}
-                  className="group overflow-hidden rounded-2xl border border-red-900/30 bg-white/[0.055] backdrop-blur-xl md:rounded-3xl"
+                  className="group self-start overflow-hidden rounded-2xl border border-red-900/30 bg-white/[0.055] backdrop-blur-xl md:rounded-3xl"
                 >
                   <summary className="cursor-pointer list-none p-4 transition hover:bg-white/5 sm:p-6">
                     <div className="flex items-start justify-between gap-3">
@@ -597,14 +735,10 @@ export default function RedDotExperience() {
                         <p className="mb-3 break-words text-xs uppercase tracking-[0.24em] text-red-200 sm:text-sm sm:tracking-[0.3em]">
                           {memory.name}
                         </p>
-
-                        <p className="break-words text-sm leading-relaxed text-zinc-300 sm:text-base">
-                          {memory.preview}
-                        </p>
                       </div>
 
                       <div className="shrink-0 rounded-full border border-red-900/40 px-2.5 py-1 text-[10px] uppercase tracking-wider text-red-200">
-                        {memory.type}
+                        {MEMORY_TYPE_LABELS[memory.type]}
                       </div>
                     </div>
                   </summary>
@@ -636,10 +770,41 @@ export default function RedDotExperience() {
                     {memory.type === "voice" && memory.content && (
                       <audio controls className="w-full" src={memory.content} />
                     )}
+
+                    {memory.type === "pdf" && (
+                      <div className="rounded-2xl border border-red-900/30 bg-black/35 p-4 sm:p-5">
+                        <a
+                          href={memory.content}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex w-full items-center justify-center rounded-full bg-red-700 px-5 py-3 text-sm font-medium text-white transition hover:bg-red-600 sm:w-auto"
+                        >
+                          Open PDF
+                        </a>
+                      </div>
+                    )}
+
+                    {hasWrittenMessage && (
+                      <details className="mt-4 rounded-2xl border border-red-900/25 bg-black/25">
+                        <summary className="cursor-pointer list-none p-4">
+                          <span className="inline-flex w-full items-center justify-center rounded-full border border-red-900/40 px-4 py-2 text-[11px] uppercase tracking-wider text-red-200 transition hover:border-red-500 sm:w-auto">
+                            See Text Message
+                          </span>
+                        </summary>
+
+                        <div className="border-t border-red-900/20 px-4 pb-4 pt-4">
+                          <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-zinc-300 sm:text-base">
+                            {memory.preview}
+                          </p>
+                        </div>
+                      </details>
+                    )}
                   </div>
                 </details>
-              ))}
-            </div>
+                );
+              })}
+              </div>
+            </>
           )}
         </div>
       </section>
