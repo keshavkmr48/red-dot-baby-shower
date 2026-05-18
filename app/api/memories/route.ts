@@ -18,7 +18,7 @@ export async function POST(request: Request) {
   const body = await request.json();
   const { type, name, content, preview } = body;
 
-  if (!type || !content || !preview) {
+  if (!type || !content) {
     return NextResponse.json(
       { error: "Missing required memory fields." },
       { status: 400 }
@@ -48,7 +48,7 @@ export async function GET() {
   const { data, error } = await supabaseAdmin
     .from("memories")
     .select("*")
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: true });
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
