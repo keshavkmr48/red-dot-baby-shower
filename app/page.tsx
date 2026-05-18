@@ -383,7 +383,7 @@ export default function RedDotExperience() {
                     Video
                   </span>
                   <span className="mt-1 block text-[11px] leading-snug text-zinc-400">
-                    You can share a video message or a recorded film.
+                    You can share a video message.
                   </span>
                 </button>
 
@@ -397,7 +397,7 @@ export default function RedDotExperience() {
                     Voice
                   </span>
                   <span className="mt-1 block text-[11px] leading-snug text-zinc-400">
-                    You can share an audio message or a recorded conversation.
+                    You can share an audio message.
                   </span>
                 </button>
 
